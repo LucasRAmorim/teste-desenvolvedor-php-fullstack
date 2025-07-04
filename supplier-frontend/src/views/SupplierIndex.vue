@@ -2,11 +2,10 @@
   <div class="bg-white p-6 rounded-lg shadow">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-semibold">{{ $t('supplier.title') }}</h2>
-      
+
       <router-link to="/create" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
         {{ $t('supplier.add_new') }}
       </router-link>
-      
     </div>
 
     <input
@@ -14,7 +13,6 @@
       :placeholder="$t('supplier.search_placeholder')"
       class="w-full border px-3 py-2 rounded mb-4 shadow-sm"
     />
-
 
     <div class="overflow-x-auto">
       <table class="min-w-full text-sm border rounded-lg">
@@ -38,12 +36,45 @@
             <td class="p-3">{{ s.city }}</td>
             <td class="p-3">{{ s.state }}</td>
             <td class="p-3 space-x-2">
-              <router-link :to="`/edit/${s.id}`" class="text-blue-600 hover:underline">{{ $t('supplier.edit') }}</router-link>
-              <button @click="removeSupplier(s.id)" class="text-red-600 hover:underline">{{ $t('supplier.delete') }}</button>
+              <router-link :to="`/edit/${s.id}`" class="text-blue-600 hover:underline">
+                {{ $t('supplier.edit') }}
+              </router-link>
+              <button @click="removeSupplier(s.id)" class="text-red-600 hover:underline">
+                {{ $t('supplier.delete') }}
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
+
+      <!-- Paginação -->
+      <div v-if="lastPage > 1" class="flex justify-center mt-4 space-x-2">
+        <button
+          class="px-3 py-1 border rounded"
+          :disabled="currentPage === 1"
+          @click="goToPage(currentPage - 1)"
+        >
+          ‹ {{ $t('pagination.previous') || 'Anterior' }}
+        </button>
+
+        <button
+          v-for="page in lastPage"
+          :key="page"
+          class="px-3 py-1 border rounded"
+          :class="{ 'bg-blue-600 text-white': page === currentPage }"
+          @click="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+
+        <button
+          class="px-3 py-1 border rounded"
+          :disabled="currentPage === lastPage"
+          @click="goToPage(currentPage + 1)"
+        >
+          {{ $t('pagination.next') || 'Próxima' }} ›
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -54,17 +85,36 @@ import supplierApi from '../api/supplier'
 
 const suppliers = ref([])
 const search = ref('')
+const currentPage = ref(1)
+const lastPage = ref(1)
 const debounceTimer = ref(null)
 
 async function loadSuppliers() {
-  const { data } = await supplierApi.getAll({ search: search.value })
-  suppliers.value = data.data
+  try {
+    const { data } = await supplierApi.getAll({
+      search: search.value,
+      page: currentPage.value
+    })
+
+    suppliers.value = data.data
+    lastPage.value = data.meta?.last_page || 1
+  } catch (e) {
+    console.error('Erro ao carregar fornecedores:', e)
+  }
+}
+
+function goToPage(page) {
+  if (page >= 1 && page <= lastPage.value) {
+    currentPage.value = page
+    loadSuppliers()
+  }
 }
 
 watch(search, (val) => {
   if (val.length >= 3 || val.length === 0) {
     clearTimeout(debounceTimer.value)
     debounceTimer.value = setTimeout(() => {
+      currentPage.value = 1
       loadSuppliers()
     }, 500)
   }
@@ -84,4 +134,3 @@ async function removeSupplier(id) {
 
 onMounted(loadSuppliers)
 </script>
-

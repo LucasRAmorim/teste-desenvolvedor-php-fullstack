@@ -25,5 +25,9 @@ export default {
   common: {
     cancel: 'Cancelar',
     save: 'Salvar'
+  },
+  pagination: {
+    "previous": "Anterior",
+    "next": "Próxima"
   }
 }
